@@ -1,3 +1,5 @@
+#include <linux/bpf.h>
+#include <bpf/bpf_helpers.h>
 #include <linux/swab.h>
 
 #ifndef __section
@@ -53,19 +55,6 @@ static int BPF_FUNC(sock_hash_update, struct bpf_sock_ops *skops,
 			void *map, void *key, __u64 flags);
 static void BPF_FUNC(trace_printk, const char *fmt, int fmt_size, ...);
 
-/*
- * Map definition
- * Why should we reuse the map definition bpf_elf_map
- * from iproute2/bpf_elf.h?
- */
-struct bpf_map_def {
-	__u32 type;
-	__u32 key_size;
-	__u32 value_size;
-	__u32 max_entries;
-	__u32 map_flags;
-};
-
 struct sock_key {
 	__u32 sip4;
 	__u32 dip4;
@@ -77,10 +66,10 @@ struct sock_key {
 	__u32 dport;
 } __attribute__((packed));
 
-struct bpf_map_def __section("maps") sock_ops_map = {
-	.type           = BPF_MAP_TYPE_SOCKHASH,
-	.key_size       = sizeof(struct sock_key),
-	.value_size     = sizeof(int),
-	.max_entries    = 65535,
-	.map_flags      = 0,
-};
+struct {
+	__uint(type, BPF_MAP_TYPE_SOCKHASH);
+	__uint(max_entries, 65535);
+	__uint(map_flags, 0);
+	__type(key, struct sock_key);
+	__type(value, int);
+} sock_ops_map SEC(".maps");
